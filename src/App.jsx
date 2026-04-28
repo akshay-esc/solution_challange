@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
-import { kpiData, alertsData, shipmentsData } from './mockData';
 import { 
   Activity, 
   AlertTriangle, 
-  Ship, 
+  Package, 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  Clock,
   Map as MapIcon, 
   Settings, 
   Bell,
@@ -12,20 +15,41 @@ import {
   ArrowDownRight,
   Info,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Ship
 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 import MapComponent from './MapComponent';
 
 function App() {
-  const [activeAlerts, setActiveAlerts] = useState(alertsData);
-  const [shipments, setShipments] = useState(shipmentsData);
+  const [kpiData, setKpiData] = useState([]);
+  const [activeAlerts, setActiveAlerts] = useState([]);
+  const [shipments, setShipments] = useState([]);
   const [isGemmaLoading, setIsGemmaLoading] = useState(false);
+  const [isAppLoading, setIsAppLoading] = useState(true);
+
+  // Use relative URLs if served from same port, or absolute if running dev server
+  const API_BASE = window.location.port === '5173' ? 'http://localhost:3001' : '';
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/dashboard`)
+      .then(res => res.json())
+      .then(data => {
+        setKpiData(data.kpiData);
+        setActiveAlerts(data.alertsData);
+        setShipments(data.shipmentsData);
+        setIsAppLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to load dashboard data:", err);
+        setIsAppLoading(false);
+      });
+  }, []);
 
   const handleGemmaAnalysis = async () => {
     setIsGemmaLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/analyze-risk', {
+      const response = await fetch(`${API_BASE}/api/analyze-risk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -34,17 +58,8 @@ function App() {
         })
       });
       const data = await response.json();
-      
-      // Prepend the new alert
-      setActiveAlerts(prev => [data.alert, ...prev]);
-      
-      // Update shipment status to critical so it can be rerouted
-      setShipments(prev => prev.map(ship => {
-        if (ship.id === data.alert.shipmentId) {
-          return { ...ship, status: 'critical', standbyDest: "Port of Boston", standbyLat: 42.3601, standbyLng: -71.0589 };
-        }
-        return ship;
-      }));
+      setActiveAlerts(data.alertsData);
+      setShipments(data.shipmentsData);
     } catch (error) {
       console.error("Error communicating with Gemma Backend:", error);
     } finally {
@@ -52,35 +67,24 @@ function App() {
     }
   };
 
-  const handleReroute = (shipmentId, alertId) => {
-    // Update shipment destination to standby port
-    setShipments(prev => prev.map(ship => {
-      if (ship.id === shipmentId && ship.standbyDest) {
-        return {
-          ...ship,
-          dest: ship.standbyDest,
-          destLat: ship.standbyLat,
-          destLng: ship.standbyLng,
-          status: 'warning' // Downgrade from critical to warning once rerouted
-        };
-      }
-      return ship;
-    }));
-
-    // Update alert to show it was resolved
-    setActiveAlerts(prev => prev.map(alert => {
-      if (alert.id === alertId) {
-        return {
-          ...alert,
-          type: 'info',
-          title: 'Shipment Rerouted',
-          description: `Successfully diverted to standby port. Route updated.`,
-          shipmentId: null
-        };
-      }
-      return alert;
-    }));
+  const handleReroute = async (shipmentId, alertId) => {
+    try {
+      const response = await fetch(`${API_BASE}/api/reroute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shipmentId, alertId })
+      });
+      const data = await response.json();
+      setActiveAlerts(data.alertsData);
+      setShipments(data.shipmentsData);
+    } catch (error) {
+      console.error("Error rerouting shipment:", error);
+    }
   };
+
+  if (isAppLoading) {
+    return <div style={{ color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading Dashboard...</div>;
+  }
 
   return (
     <div className="app-container">

@@ -1,6 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+
+let { kpiData, alertsData, shipmentsData } = require('./data');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -8,7 +11,50 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '../dist')));
+
 const GEMMA_API_KEY = process.env.GEMMA_API_KEY;
+
+// GET Dashboard State
+app.get('/api/dashboard', (req, res) => {
+  res.json({ kpiData, alertsData, shipmentsData });
+});
+
+// POST Reroute Shipment
+app.post('/api/reroute', (req, res) => {
+  const { shipmentId, alertId } = req.body;
+
+  // Update Shipment
+  shipmentsData = shipmentsData.map(ship => {
+    if (ship.id === shipmentId && ship.standbyDest) {
+      return {
+        ...ship,
+        dest: ship.standbyDest,
+        destLat: ship.standbyLat,
+        destLng: ship.standbyLng,
+        status: 'warning'
+      };
+    }
+    return ship;
+  });
+
+  // Update Alert
+  alertsData = alertsData.map(alert => {
+    if (alert.id === alertId) {
+      return {
+        ...alert,
+        type: 'info',
+        title: 'Shipment Rerouted',
+        description: `Successfully diverted to standby port. Route updated.`,
+        shipmentId: null
+      };
+    }
+    return alert;
+  });
+
+  res.json({ success: true, shipmentsData, alertsData });
+});
 
 app.post('/api/analyze-risk', async (req, res) => {
   const { weatherData, portData } = req.body;
@@ -24,7 +70,6 @@ app.post('/api/analyze-risk', async (req, res) => {
       console.log("Calling Hugging Face Inference API for Gemma...");
       const prompt = `<start_of_turn>user\nYou are a supply chain risk analyzer. Generate a short, 2-sentence alert description based on this data. Weather: ${weatherData}, Ports: ${portData}.<end_of_turn>\n<start_of_turn>model\n`;
       
-      // Node 18+ has built-in fetch
       const response = await fetch("https://api-inference.huggingface.co/models/google/gemma-1.1-7b-it", {
         method: "POST",
         headers: {
@@ -52,7 +97,6 @@ app.post('/api/analyze-risk', async (req, res) => {
     }
   }
 
-  // Construct the final alert object
   const alertObject = {
     id: Date.now(),
     type: "critical",
@@ -60,12 +104,28 @@ app.post('/api/analyze-risk', async (req, res) => {
     description: generatedDescription,
     time: "Just now",
     location: "New York, NY",
-    shipmentId: "SHP-110" // Matches our Rotterdam -> NY shipment
+    shipmentId: "SHP-110" 
   };
 
-  res.json({ alert: alertObject });
+  // Add alert to memory database
+  alertsData = [alertObject, ...alertsData];
+
+  // Update shipment to critical
+  shipmentsData = shipmentsData.map(ship => {
+    if (ship.id === alertObject.shipmentId) {
+      return { ...ship, status: 'critical', standbyDest: "Port of Boston", standbyLat: 42.3601, standbyLng: -71.0589 };
+    }
+    return ship;
+  });
+
+  res.json({ success: true, alertsData, shipmentsData });
+});
+
+// Fallback for React Router
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`Gemma Backend Server running on http://localhost:${PORT}`);
+  console.log(`MVP Server running on http://localhost:${PORT}`);
 });

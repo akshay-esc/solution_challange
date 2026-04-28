@@ -1,11 +1,11 @@
-export const kpiData = [
+const kpiData = [
   { id: 1, label: "Active Shipments", value: "24,592", trend: "+12%", isUp: true, color: "#3b82f6", chartData: [{v: 20000}, {v: 21500}, {v: 21000}, {v: 23000}, {v: 23500}, {v: 24000}, {v: 24592}] },
   { id: 2, label: "High-Risk Routes", value: "1,204", trend: "+5%", isUp: false, color: "#ef4444", chartData: [{v: 1050}, {v: 1100}, {v: 1080}, {v: 1150}, {v: 1120}, {v: 1180}, {v: 1204}] },
   { id: 3, label: "On-Time Delivery", value: "94.2%", trend: "-1.1%", isUp: false, color: "#f97316", chartData: [{v: 96.5}, {v: 96.0}, {v: 95.8}, {v: 95.5}, {v: 94.8}, {v: 94.5}, {v: 94.2}] },
   { id: 4, label: "Est. Value at Risk", value: "$4.2B", trend: "+0.8%", isUp: false, color: "#8b5cf6", chartData: [{v: 3.8}, {v: 3.9}, {v: 3.85}, {v: 4.0}, {v: 4.1}, {v: 4.15}, {v: 4.2}] }
 ];
 
-export const alertsData = [
+const alertsData = [
   {
     id: 1,
     type: "critical",
@@ -35,7 +35,7 @@ export const alertsData = [
   }
 ];
 
-export const shipmentsData = [
+const shipmentsData = [
   { id: "SHP-101", lat: 31.2304, lng: 121.4737, status: "warning", origin: "Shanghai", dest: "Los Angeles", destLat: 34.0522, destLng: -118.2437, progress: 45 },
   { id: "SHP-102", lat: 30.7490, lng: -125.2437, status: "critical", origin: "Shenzhen", originLat: 22.5431, originLng: 114.0579, dest: "Long Beach", destLat: 33.7701, destLng: -118.1937, progress: 85, standbyDest: "Oakland", standbyLat: 37.8044, standbyLng: -122.2712 },
   { id: "SHP-103", lat: 1.3521, lng: 103.8198, status: "normal", origin: "Singapore", dest: "Rotterdam", destLat: 51.9225, destLng: 4.4791, progress: 20 },
@@ -47,3 +47,4 @@ export const shipmentsData = [
   { id: "SHP-109", lat: -33.8688, lng: 151.2093, status: "warning", origin: "Sydney", dest: "Singapore", destLat: 1.3521, destLng: 103.8198, progress: 70 },
   { id: "SHP-110", lat: 40.7128, lng: -74.0060, status: "normal", origin: "Rotterdam", dest: "New York", destLat: 40.7128, destLng: -74.0060, progress: 90 },
 ];
+module.exports = { kpiData, alertsData, shipmentsData };
