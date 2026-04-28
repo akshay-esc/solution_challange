@@ -1,9 +1,18 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-let { kpiData, alertsData, shipmentsData } = require('./data');
+import { kpiData as initKpi, alertsData as initAlerts, shipmentsData as initShipments } from './data.js';
+
+let kpiData = initKpi;
+let alertsData = initAlerts;
+let shipmentsData = initShipments;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -127,10 +136,10 @@ app.use((req, res) => {
 });
 
 // Export the Express API for Vercel Serverless
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   app.listen(PORT, () => {
     console.log(`MVP Server running on http://localhost:${PORT}`);
   });
 }
 
-module.exports = app;
+export default app;

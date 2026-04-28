@@ -47,4 +47,4 @@ const shipmentsData = [
   { id: "SHP-109", lat: -33.8688, lng: 151.2093, status: "warning", origin: "Sydney", dest: "Singapore", destLat: 1.3521, destLng: 103.8198, progress: 70 },
   { id: "SHP-110", lat: 40.7128, lng: -74.0060, status: "normal", origin: "Rotterdam", dest: "New York", destLat: 40.7128, destLng: -74.0060, progress: 90 },
 ];
-module.exports = { kpiData, alertsData, shipmentsData };
+export { kpiData, alertsData, shipmentsData };
